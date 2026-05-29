@@ -1,0 +1,522 @@
+// Laiw — unified Prisma schema
+// Merged from: Suzie Law (AI legal workspace) + Iuris-Soft (firm management)
+// Target replacement for: LawVu LegalOS (in-house legal operations)
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// ── Enums ─────────────────────────────────────────────────
+
+enum Role {
+  ADMIN
+  ATTORNEY
+  PARALEGAL
+  CLIENT
+}
+
+enum MatterStatus {
+  OPEN
+  IN_PROGRESS
+  ON_HOLD
+  CLOSED
+}
+
+enum ContractStatus {
+  DRAFT
+  UNDER_REVIEW
+  APPROVED
+  EXECUTED
+  EXPIRED
+  TERMINATED
+}
+
+enum RedlineAction {
+  ACCEPT
+  REJECT
+  MODIFIED
+}
+
+enum SpendType {
+  OUTSIDE_COUNSEL_FEE
+  EXPENSE
+  SOFTWARE
+  FILING_FEE
+  OTHER
+}
+
+enum TransactionStatus {
+  PENDING
+  APPROVED
+  PAID
+  REJECTED
+}
+
+enum IntakeStatus {
+  RECEIVED
+  TRIAGED
+  IN_PROGRESS
+  RESOLVED
+}
+
+enum TaskStatus {
+  PENDING
+  IN_PROGRESS
+  DONE
+  CANCELLED
+}
+
+enum TaskPriority {
+  LOW
+  MEDIUM
+  HIGH
+  URGENT
+}
+
+enum DocumentType {
+  PLEADING
+  BRIEF
+  MEMORANDUM
+  CONTRACT
+  DISCOVERY
+  OPINION
+  OTHER
+}
+
+enum CaseStatus {
+  OPEN
+  IN_PROGRESS
+  ON_HOLD
+  CLOSED
+  APPEALED
+}
+
+enum UserType {
+  ATTORNEY
+  PARALEGAL
+  CLIENT
+  SUPERVISOR
+  ADMIN
+}
+
+// ── Membership Models (before User) ───────────────────────
+
+model MatterMember {
+  id     String @id @default(uuid())
+  matterId String
+  matter Matter @relation(fields: [matterId], references: [id], onDelete: Cascade)
+  userId String
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+  role   String
+  createdAt DateTime @default(now())
+  @@unique([matterId, userId])
+}
+
+model ContractMember {
+  id         String  @id @default(uuid())
+  contractId String
+  contract   Contract @relation(fields: [contractId], references: [id], onDelete: Cascade)
+  userId     String
+  user       User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  role       String
+  createdAt  DateTime @default(now())
+  @@unique([contractId, userId])
+}
+
+// ── Identity ──────────────────────────────────────────────
+
+model User {
+  id             String           @id @default(uuid())
+  email          String           @unique
+  passwordHash   String
+  role           Role             @default(ATTORNEY)
+  firstName      String?
+  lastName       String?
+  isActive       Boolean          @default(true)
+  createdAt      DateTime         @default(now())
+  updatedAt      DateTime         @updatedAt
+
+  organization   Organization?    @relation("OrgUsers", fields: [organizationId], references: [id])
+  organizationId String?
+
+  matterMembers  MatterMember[]
+  contractMembers ContractMember[]
+  tasksAssigned  Task[]           @relation("TaskAssignee")
+  timeEntries    TimeEntry[]     @relation("UserTimeEntries")
+  profile        UserProfile?     @relation("UserProfile")
+  contacts       Contact[]        @relation("UserContacts")
+  invoices       BillingInvoice[] @relation("UserInvoices")
+}
+
+model Organization {
+  id        String           @id @default(uuid())
+  name      String
+  createdAt DateTime         @default(now())
+  updatedAt DateTime         @updatedAt
+
+  users     User[]           @relation("OrgUsers")
+  matters   Matter[]
+  kbEntries KBEntry[]
+  intakeForms IntakeForm[]
+  customFields CustomMatterField[]
+}
+
+// ── Matters ───────────────────────────────────────────────
+
+model Matter {
+  id          String             @id @default(uuid())
+  name        String
+  description String?
+  status      MatterStatus       @default(OPEN)
+  matterType  String?
+  orgId       String
+  org         Organization       @relation(fields: [orgId], references: [id])
+  createdAt   DateTime           @default(now())
+  updatedAt   DateTime           @updatedAt
+
+  documents   Document[]
+  contracts   Contract[]
+  spendTransactions SpendTransaction[]
+  tasks       Task[]
+  members     MatterMember[]
+  chats       Chat[]
+  intakeSubmissions IntakeSubmission[]
+  budgets     SpendBudget[]
+  customValues CustomMatterFieldValue[]
+  type        MatterType?        @relation("MatterTypes", fields: [typeId], references: [id])
+  typeId      String?
+  rulings     CaseRuling[]       @relation("MatterRulings")
+  auditLogs   AuditLog[]         @relation("MatterAuditLogs")
+  invoices    BillingInvoice[]   @relation("MatterInvoices")
+  timeEntries TimeEntry[]        @relation("MatterTimeEntries")
+}
+
+// ── Documents ─────────────────────────────────────────────
+
+model Document {
+  id         String   @id @default(uuid())
+  matterId   String
+  matter     Matter   @relation(fields: [matterId], references: [id])
+  contractId String?
+  contract   Contract? @relation(fields: [contractId], references: [id])
+  name       String
+  mimeType   String
+  storageKey String
+  size       Int
+  uploadedBy String
+  createdAt  DateTime @default(now())
+}
+
+// ── Contracts ─────────────────────────────────────────────
+
+model Contract {
+  id             String          @id @default(uuid())
+  matterId       String
+  matter         Matter          @relation(fields: [matterId], references: [id])
+  title          String
+  counterparty   String?
+  contractType   String?
+  status         ContractStatus  @default(DRAFT)
+  startDate      DateTime?
+  endDate        DateTime?
+  autoRenew      Boolean         @default(false)
+  contractValue  Decimal?
+  currency       String?         @default("USD")
+  createdAt      DateTime        @default(now())
+  updatedAt      DateTime        @updatedAt
+
+  currentVersionId String? @unique
+  currentVersion   ContractVersion? @relation("CurrentVersion", fields: [currentVersionId], references: [id])
+
+  versions    ContractVersion[]  @relation("ContractVersions")
+  redlines    ContractRedline[]
+  documents   Document[]
+  members     ContractMember[]
+}
+
+model ContractVersion {
+  id        String      @id @default(uuid())
+  contractId String
+  contract  Contract    @relation("ContractVersions", fields: [contractId], references: [id])
+  number    Int
+  content   String?
+  docxKey   String?
+  changes   String?
+  createdAt DateTime    @default(now())
+  // Current version link back to Contract (one-to-one)
+  currentContractId String? @unique
+  currentContract Contract? @relation("CurrentVersion")
+  // Redlines referencing this version
+  redlines ContractRedline[]
+
+  @@unique([contractId, number])
+}
+
+model ContractRedline {
+  id         String      @id @default(uuid())
+  versionId  String
+  version    ContractVersion @relation(fields: [versionId], references: [id])
+  contract   Contract    @relation(fields: [contractId], references: [id])
+  contractId String
+  clauseIndex Int
+  proposed   String
+  original   String
+  action     RedlineAction @default(MODIFIED)
+  createdAt  DateTime     @default(now())
+}
+
+// ── Spend / Budget ────────────────────────────────────────
+
+model SpendBudget {
+  id          String            @id @default(uuid())
+  matterId    String
+  matter      Matter            @relation(fields: [matterId], references: [id])
+  totalAmount Decimal
+  currency    String            @default("USD")
+  spent       Decimal           @default(0)
+  createdAt   DateTime          @default(now())
+  updatedAt   DateTime          @updatedAt
+
+  retainerUsages RetainerUsage[]
+}
+
+model SpendTransaction {
+  id          String            @id @default(uuid())
+  matterId    String
+  matter      Matter            @relation(fields: [matterId], references: [id])
+  type        SpendType         @default(OUTSIDE_COUNSEL_FEE)
+  vendorName  String?
+  invoiceRef  String?
+  amount      Decimal
+  currency    String            @default("USD")
+  status      TransactionStatus @default(PENDING)
+  paidAt      DateTime?
+  notes       String?
+  createdAt   DateTime          @default(now())
+  updatedAt   DateTime          @updatedAt
+}
+
+// ── Knowledge Base ────────────────────────────────────────
+
+model KBEntry {
+  id        String   @id @default(uuid())
+  orgId     String
+  org       Organization @relation(fields: [orgId], references: [id])
+  title     String
+  body      String
+  tags      String[]
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+// ── Chat ──────────────────────────────────────────────────
+
+model Chat {
+  id        String   @id @default(uuid())
+  matterId  String
+  matter    Matter   @relation(fields: [matterId], references: [id])
+  role      String
+  content   String
+  createdAt DateTime @default(now())
+}
+
+// ── Intake & Self-Service ─────────────────────────────────
+
+model IntakeForm {
+  id        String           @id @default(uuid())
+  orgId     String
+  org       Organization     @relation(fields: [orgId], references: [id])
+  name      String
+  formSchema String?
+  isActive  Boolean  @default(true)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  submissions IntakeSubmission[]
+}
+
+model IntakeSubmission {
+  id           String         @id @default(uuid())
+  formId       String
+  form         IntakeForm     @relation(fields: [formId], references: [id])
+  submitter    String
+  answers      String
+  triageResult String?        // JSON: {suggestedMatterType, suggestedMatterTitle, priority, prefill, confidence}
+  status       IntakeStatus   @default(RECEIVED)
+  matterId     String?
+  matter       Matter?        @relation(fields: [matterId], references: [id])
+  createdAt    DateTime       @default(now())
+  updatedAt    DateTime       @updatedAt
+}
+
+// ── Tasks ─────────────────────────────────────────────────
+
+model Task {
+  id          String       @id @default(uuid())
+  matterId    String?
+  matter      Matter?      @relation(fields: [matterId], references: [id])
+  title       String
+  description String?
+  status      TaskStatus   @default(PENDING)
+  priority    TaskPriority @default(MEDIUM)
+  assigneeId  String?
+  assignee    User?        @relation("TaskAssignee", fields: [assigneeId], references: [id])
+  dueDate     DateTime?
+  createdAt   DateTime     @default(now())
+  updatedAt   DateTime     @updatedAt
+}
+
+// ── Custom Matter Fields ──────────────────────────────────
+
+model CustomMatterField {
+  id        String                   @id @default(uuid())
+  orgId     String
+  org       Organization             @relation(fields: [orgId], references: [id])
+  name      String
+  fieldType String
+  options   String?
+  required  Boolean  @default(false)
+  createdAt DateTime @default(now())
+  values    CustomMatterFieldValue[]
+}
+
+model CustomMatterFieldValue {
+  id        String   @id @default(uuid())
+  matterId  String
+  matter    Matter   @relation(fields: [matterId], references: [id], onDelete: Cascade)
+  fieldId   String
+  field     CustomMatterField @relation(fields: [fieldId], references: [id])
+  value     String
+  @@unique([matterId, fieldId])
+}
+
+// ── Iuris-Soft: Audit Log ─────────────────────────────────
+
+model AuditLog {
+  id         String   @id @default(uuid())
+  matterId   String
+  matter     Matter   @relation("MatterAuditLogs", fields: [matterId], references: [id], onDelete: Cascade)
+  userId     String
+  content    String
+  createdAt  DateTime @default(now())
+}
+
+// ── Iuris-Soft: Contact ───────────────────────────────────
+
+model Contact {
+  id         String   @id @default(uuid())
+  name       String
+  email      String?
+  phone      String?
+  userId     String
+  user       User     @relation("UserContacts", fields: [userId], references: [id], onDelete: Cascade)
+  createdAt  DateTime @default(now())
+  @@index([userId])
+}
+
+// ── Iuris-Soft: Matter Type ───────────────────────────────
+
+model MatterType {
+  id          String        @id @default(uuid())
+  title       String
+  description String?
+  cases       Matter[]      @relation("MatterTypes")
+
+  @@unique([title])
+}
+
+// ── Iuris-Soft: Case Ruling ───────────────────────────────
+
+model CaseRuling {
+  id         String   @id @default(uuid())
+  matterId   String
+  matter     Matter   @relation("MatterRulings", fields: [matterId], references: [id], onDelete: Cascade)
+  rulingText String
+  ruledBy    String?
+  rulingDate DateTime?
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+}
+
+// ── Iuris-Soft: Billing Invoice ───────────────────────────
+
+model BillingInvoice {
+  id          String   @id @default(uuid())
+  matterId    String
+  matter      Matter   @relation("MatterInvoices", fields: [matterId], references: [id])
+  userId      String
+  user        User     @relation("UserInvoices", fields: [userId], references: [id])
+  invoiceNumber String
+  dateIssued  DateTime
+  amount      Decimal
+  isPaid      Boolean  @default(false)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  approvals   InvoiceApproval[]
+  @@index([matterId])
+  @@index([userId])
+}
+
+// ── Iuris-Soft: Invoice Approval ──────────────────────────
+
+model InvoiceApproval {
+  id           String       @id @default(uuid())
+  invoiceId    String
+  invoice      BillingInvoice @relation(fields: [invoiceId], references: [id], onDelete: Cascade)
+  supervisorId String
+  isApproved   Boolean
+  approvedAt   DateTime?
+  createdAt    DateTime     @default(now())
+}
+
+// ── Iuris-Soft: Retainer Usage ────────────────────────────
+
+model RetainerUsage {
+  id           String    @id @default(uuid())
+  budgetId     String
+  budget       SpendBudget @relation(fields: [budgetId], references: [id], onDelete: Cascade)
+  amount       Decimal
+  date         DateTime  @default(now())
+  description  String?
+  timeEntry    TimeEntry?  @relation("RetainerTimeEntry")
+  @@index([budgetId])
+}
+
+// ── Iuris-Soft: Time Entry ────────────────────────────────
+
+model TimeEntry {
+  id            String    @id @default(uuid())
+  matterId      String
+  matter        Matter    @relation("MatterTimeEntries", fields: [matterId], references: [id])
+  userId        String
+  user          User      @relation("UserTimeEntries", fields: [userId], references: [id])
+  startTime     DateTime
+  endTime       DateTime?
+  description   String?
+  isBilled      Boolean   @default(false)
+  retainerUsageId String?     @unique
+  retainerUsage   RetainerUsage? @relation("RetainerTimeEntry", fields: [retainerUsageId], references: [id])
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+
+  @@index([matterId])
+  @@index([userId])
+}
+
+// ── Iuris-Soft: User Profile ──────────────────────────────
+
+model UserProfile {
+  id        String   @id @default(uuid())
+  userId    String   @unique
+  user      User     @relation("UserProfile", fields: [userId], references: [id], onDelete: Cascade)
+  phone     String?
+  address   String?
+  signature String?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}

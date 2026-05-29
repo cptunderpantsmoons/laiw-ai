@@ -1,0 +1,41 @@
+# Dependencies
+node_modules
+pnpm-store
+.open_teamsuzie/.husky
+
+# Build output
+dist
+.open_teamsuzie/packages/*/dist
+.open_teamsuzie/apps/*/dist
+
+# Docker
+Dockerfile
+Dockerfile.*
+docker-compose*.yml
+.dockerignore
+
+# IDE
+.vscode
+.idea
+*.swp
+*.swo
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Git
+.git
+.gitignore
+
+# Docs
+*.md
+
+# Test
+coverage
+.open_teamsuzie/coverage
+
+# Env (keep .env.example, exclude .env)
+.env
+.env.local
+.env.*.local

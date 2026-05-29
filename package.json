@@ -1,0 +1,40 @@
+{
+  "name": "laiw",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "description": "Unified legal operating system — Suzie Law AI + Iuris-Soft management",
+  "workspaces": [
+    "apps/*",
+    "packages/*"
+  ],
+  "scripts": {
+    "dev": "concurrently -n server,client -c blue,magenta \"pnpm --filter @laiw/server dev\" \"pnpm --filter @laiw/client dev\"",
+    "dev:full": "./scripts/dev.sh",
+    "build": "pnpm --filter @laiw/client build && pnpm --filter @laiw/server build",
+    "db:generate": "prisma generate --schema=packages/shared/schema.prisma",
+    "db:migrate": "prisma migrate dev --schema=packages/shared/schema.prisma",
+    "db:seed": "tsx apps/server/src/scripts/seed.ts",
+    "db:studio": "prisma studio --schema=packages/shared/schema.prisma",
+    "typecheck": "tsc --noEmit",
+    "lint": "eslint apps/"
+  },
+  "devDependencies": {
+    "@prisma/client": "6.19.3",
+    "@types/jsonwebtoken": "^9.0.10",
+    "@types/node": "^22.19.19",
+    "concurrently": "^9.1.0",
+    "prisma": "^6.5.0",
+    "tsx": "^4.22.3",
+    "typescript": "^5.7.0",
+    "vitest": "^4.1.7"
+  },
+  "packageManager": "pnpm@10.4.1",
+  "dependencies": {
+    "@aws-sdk/client-s3": "^3.1056.0",
+    "@aws-sdk/s3-request-presigner": "^3.1056.0",
+    "express-rate-limit": "^8.5.2",
+    "helmet": "^8.2.0",
+    "jose": "^6.2.3"
+  }
+}

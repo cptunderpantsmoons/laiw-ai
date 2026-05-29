@@ -1,0 +1,119 @@
+name: laiw-dev
+
+services:
+  postgres:
+    image: postgres:17-alpine
+    environment:
+      POSTGRES_DB: laiw
+      POSTGRES_USER: laiw
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-laiw}
+    ports:
+      - "5432:5432"
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U laiw"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+    networks:
+      - laiw-dev
+
+  redis:
+    image: redis:7-alpine
+    ports:
+      - "6379:6379"
+    volumes:
+      - redisdata:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+    networks:
+      - laiw-dev
+
+  markitdown-agent:
+    build:
+      context: ./open_teamsuzie/apps/agents/markitdown-agent
+      dockerfile: Dockerfile
+    ports:
+      - "3013:3013"
+    environment:
+      MARKITDOWN_AGENT_HOST: 0.0.0.0
+      MARKITDOWN_AGENT_PORT: 3013
+      MARKITDOWN_AGENT_MAX_UPLOAD_BYTES: ${MARKITDOWN_AGENT_MAX_UPLOAD_BYTES:-52428800}
+    depends_on:
+      postgres:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://localhost:3013/health')"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+    networks:
+      - laiw-dev
+
+  minio:
+    image: minio/minio:RELEASE.2025-02-28T09-56-21Z
+    command: server /data --console-address ":9001"
+    environment:
+      MINIO_ROOT_USER: ${MINIO_ROOT_USER:-minioadmin}
+      MINIO_ROOT_PASSWORD: ${MINIO_ROOT_PASSWORD:-minioadmin}
+    ports:
+      - "9000:9000"
+      - "9001:9001"
+    volumes:
+      - miniodata:/data
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:9000/minio/health/live"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+    networks:
+      - laiw-dev
+
+  server:
+    build:
+      context: .
+      dockerfile: apps/server/Dockerfile
+    ports:
+      - "3001:3001"
+    environment:
+      PORT: 3001
+      NODE_ENV: production
+      DATABASE_URL: "postgresql://laiw:***@postgres:5432/laiw"
+      REDIS_URL: "redis://redis:6379"
+      MARKITDOWN_AGENT_BASE_URL: "http://markitdown-agent:3013"
+      SESSION_SECRET: ${SESSION_SECRET:-change-me-in-production}
+      MINIO_ENDPOINT: "minio:9000"
+      MINIO_ROOT_USER: ${MINIO_ROOT_USER:-minioadmin}
+      MINIO_ROOT_PASSWORD: ${MINIO_ROOT_PASSWORD:-minioadmin}
+      MINIO_BUCKET: ${MINIO_BUCKET:-laiw-uploads}
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    networks:
+      - laiw-dev
+
+  client:
+    build:
+      context: .
+      dockerfile: apps/client/Dockerfile
+    ports:
+      - "3000:80"
+    depends_on:
+      - server
+    networks:
+      - laiw-dev
+
+volumes:
+  pgdata:
+  redisdata:
+  miniodata:
+
+networks:
+  laiw-dev:
+    driver: bridge

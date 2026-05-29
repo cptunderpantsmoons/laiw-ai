@@ -1,0 +1,27 @@
+node_modules/
+dist/
+build/
+.turbo/
+.cache/
+.env
+.env.local
+.env.*.local
+
+# Nested repos
+open_teamsuzie/
+Iuris-Soft-main/
+
+# IDE
+.idea/
+.vscode/
+*.swp
+*.swo
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Build artifacts
+*.pyc
+__pycache__/
+*.egg-info/
