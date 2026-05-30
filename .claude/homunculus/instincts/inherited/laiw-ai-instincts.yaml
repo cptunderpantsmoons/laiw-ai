@@ -1,0 +1,297 @@
+# Instincts generated from https://github.com/cptunderpantsmoons/laiw-ai
+# Generated: 2026-05-30T04:01:13.235Z
+# Version: 2.0
+# NOTE: This file supplements (does not replace) any existing curated instincts.
+# High-confidence manually curated instincts should be preserved alongside these.
+
+---
+id: laiw-ai-commit-length
+trigger: "when writing a commit message"
+confidence: 0.6
+domain: git
+source: repo-analysis
+source_repo: https://github.com/cptunderpantsmoons/laiw-ai
+---
+
+# Laiw Ai Commit Length
+
+## Action
+
+Write moderate-length commit messages (~73 characters)
+
+## Evidence
+
+- Average commit message length: 73 chars
+- Based on 1 commits
+
+---
+id: laiw-ai-naming-files
+trigger: "when creating a new file"
+confidence: 0.8
+domain: code-style
+source: repo-analysis
+source_repo: https://github.com/cptunderpantsmoons/laiw-ai
+---
+
+# Laiw Ai Naming Files
+
+## Action
+
+Use PascalCase naming convention
+
+## Evidence
+
+- Analyzed file naming patterns in repository
+- Dominant pattern: PascalCase
+
+---
+id: laiw-ai-import-relative
+trigger: "when importing modules"
+confidence: 0.75
+domain: code-style
+source: repo-analysis
+source_repo: https://github.com/cptunderpantsmoons/laiw-ai
+---
+
+# Laiw Ai Import Relative
+
+## Action
+
+Use relative imports for project files
+
+## Evidence
+
+- Import analysis shows relative import pattern
+- Example: import { x } from '../lib/x'
+
+---
+id: laiw-ai-export-style
+trigger: "when exporting from a module"
+confidence: 0.7
+domain: code-style
+source: repo-analysis
+source_repo: https://github.com/cptunderpantsmoons/laiw-ai
+---
+
+# Laiw Ai Export Style
+
+## Action
+
+Prefer default exports
+
+## Evidence
+
+- Export pattern analysis
+- Dominant style: default
+
+---
+id: laiw-ai-test-separate
+trigger: "when writing tests"
+confidence: 0.8
+domain: testing
+source: repo-analysis
+source_repo: https://github.com/cptunderpantsmoons/laiw-ai
+---
+
+# Laiw Ai Test Separate
+
+## Action
+
+Place tests in the tests/ or __tests__/ directory, mirroring src structure
+
+## Evidence
+
+- Separate test directory pattern detected
+- Tests live in dedicated test folders
+
+---
+id: laiw-ai-instinct-file-naming
+trigger: "When creating a new file"
+confidence: 0.9
+domain: code-style
+source: repo-analysis
+source_repo: cptunderpantsmoons/laiw-ai
+---
+
+# Laiw Ai Instinct File Naming
+
+## Action
+
+Name the file using PascalCase
+
+## Evidence
+
+- Pattern in namingConventions.files
+
+---
+id: laiw-ai-instinct-function-naming
+trigger: "When defining a function"
+confidence: 0.9
+domain: code-style
+source: repo-analysis
+source_repo: cptunderpantsmoons/laiw-ai
+---
+
+# Laiw Ai Instinct Function Naming
+
+## Action
+
+Name the function using camelCase
+
+## Evidence
+
+- Pattern in namingConventions.functions
+
+---
+id: laiw-ai-instinct-class-naming
+trigger: "When defining a class"
+confidence: 0.9
+domain: code-style
+source: repo-analysis
+source_repo: cptunderpantsmoons/laiw-ai
+---
+
+# Laiw Ai Instinct Class Naming
+
+## Action
+
+Name the class using PascalCase
+
+## Evidence
+
+- Pattern in namingConventions.classes
+
+---
+id: laiw-ai-instinct-constant-naming
+trigger: "When declaring a constant"
+confidence: 0.9
+domain: code-style
+source: repo-analysis
+source_repo: cptunderpantsmoons/laiw-ai
+---
+
+# Laiw Ai Instinct Constant Naming
+
+## Action
+
+Name the constant using SCREAMING_SNAKE_CASE
+
+## Evidence
+
+- Pattern in namingConventions.constants
+
+---
+id: laiw-ai-instinct-import-style
+trigger: "When importing modules"
+confidence: 0.8
+domain: code-style
+source: repo-analysis
+source_repo: cptunderpantsmoons/laiw-ai
+---
+
+# Laiw Ai Instinct Import Style
+
+## Action
+
+Use relative import paths
+
+## Evidence
+
+- Pattern in importStyle
+
+---
+id: laiw-ai-instinct-export-style
+trigger: "When exporting modules or components"
+confidence: 0.8
+domain: code-style
+source: repo-analysis
+source_repo: cptunderpantsmoons/laiw-ai
+---
+
+# Laiw Ai Instinct Export Style
+
+## Action
+
+Use default exports
+
+## Evidence
+
+- Pattern in exportStyle
+
+---
+id: laiw-ai-instinct-error-handling
+trigger: "When handling errors in code"
+confidence: 0.8
+domain: code-style
+source: repo-analysis
+source_repo: cptunderpantsmoons/laiw-ai
+---
+
+# Laiw Ai Instinct Error Handling
+
+## Action
+
+Use try-catch blocks for error handling
+
+## Evidence
+
+- Pattern in errorHandling.style
+
+---
+id: laiw-ai-instinct-test-location
+trigger: "When adding new tests"
+confidence: 0.8
+domain: testing
+source: repo-analysis
+source_repo: cptunderpantsmoons/laiw-ai
+---
+
+# Laiw Ai Instinct Test Location
+
+## Action
+
+Place test files in a separate test folder
+
+## Evidence
+
+- Pattern in architecture.testLocation
+
+---
+id: laiw-ai-instinct-commit-format
+trigger: "When writing a commit message"
+confidence: 0.7
+domain: git
+source: repo-analysis
+source_repo: cptunderpantsmoons/laiw-ai
+---
+
+# Laiw Ai Instinct Commit Format
+
+## Action
+
+Write a freeform commit message without a specific prefix
+
+## Evidence
+
+- Pattern in commits.type
+- Seen in commit: Implement AI Chat Interface as Primary Application Entry Point
+
+---
+id: laiw-ai-instinct-monorepo-structure
+trigger: "When adding a new application or package"
+confidence: 0.8
+domain: architecture
+source: repo-analysis
+source_repo: cptunderpantsmoons/laiw-ai
+---
+
+# Laiw Ai Instinct Monorepo Structure
+
+## Action
+
+Place it under the 'apps' folder in the monorepo
+
+## Evidence
+
+- Pattern in architecture.folderStructure.commonFolders
+
