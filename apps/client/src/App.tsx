@@ -1,5 +1,6 @@
 import { Routes, Route, Navigate } from 'react-router-dom'
 import Layout from './components/Layout'
+import AIChat from './pages/AIChat'
 import Dashboard from './pages/Dashboard'
 import Matters from './pages/Matters'
 import MatterDetail from './pages/MatterDetail'
@@ -29,7 +30,10 @@ function App() {
       {/* Public intake pages */}
       <Route path="/intake" element={<IntakePortal />} />
       <Route path="/intake/:formId" element={<IntakeFormPage />} />
-      <Route path="/" element={<Layout />}>
+      {/* AI Chat as the main interface */}
+      <Route path="/" index element={<AIChat />} />
+      <Route path="/chat" element={<AIChat />} />
+      <Route path="/dashboard" element={<Layout />}>
         <Route index element={<Navigate to="/dashboard" replace />} />
         <Route path="dashboard" element={<Dashboard />} />
         <Route path="matters" element={<Matters />} />
